@@ -1,6 +1,6 @@
 // Dán URL Web App (Apps Script deployment) của bạn vào đây, ví dụ:
 // "https://script.google.com/macros/s/AKfycb.../exec"
-const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtB5Dgg-xWUcY5vER4X70Sc-GYLdUv4613l1cG5edGh0kvdBUhvGiuklBZHRgGSWLV/exec";
 
 const form = document.getElementById("expense-form");
 const ngayChiInput = document.getElementById("ngayChi");

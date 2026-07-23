@@ -1,6 +1,8 @@
 # TinhTienCom — Web kê khai chi tiêu chung
 
-Form web tĩnh (host trên GitHub Pages) gửi dữ liệu vào Google Sheet thông qua Google Apps Script.
+Form web React (Vite), host trên GitHub Pages qua GitHub Actions, gửi dữ liệu vào Google Sheet thông qua Google Apps Script.
+
+Domain: https://tinhtiencom.thanhht.org/
 
 ## Cấu trúc dữ liệu
 
@@ -42,39 +44,36 @@ Cách thống kê sau này:
 
 ## Bước 3 — Gắn URL vào web
 
-Mở file [`script.js`](script.js), sửa dòng đầu tiên:
+Mở file [`src/config.js`](src/config.js), sửa:
 
 ```js
-const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+export const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 ```
 
 Thay bằng URL vừa copy ở Bước 2.
 
-## Bước 4 — Chạy thử local (tuỳ chọn)
-
-Mở trực tiếp `index.html` bằng trình duyệt, hoặc chạy server tĩnh đơn giản:
+## Bước 4 — Chạy thử local
 
 ```bash
-npx serve .
+npm install
+npm run dev
 ```
 
-Kiểm tra: danh sách người chi / tham gia có load lên không, gửi thử 1 khoản chi rồi xem dữ liệu có xuất hiện trong Google Sheet không.
+Mở URL hiện ra (thường là `http://localhost:5173`). Kiểm tra: danh sách người chi / tham gia có load lên không, gửi thử 1 khoản chi rồi xem dữ liệu có xuất hiện trong Google Sheet không.
 
 ## Bước 5 — Đưa lên GitHub Pages
 
+Repo đã có sẵn workflow [`​.github/workflows/deploy.yml`](.github/workflows/deploy.yml): mỗi lần push lên nhánh `main`, GitHub Actions tự `npm run build` rồi deploy thư mục `dist/` lên GitHub Pages.
+
 ```bash
-git init
-git add index.html style.css script.js apps-script README.md
-git commit -m "Initial commit: expense form"
-git branch -M main
-git remote add origin https://github.com/<username>/<repo>.git
-git push -u origin main
+git add -A
+git commit -m "Update"
+git push
 ```
 
-Sau đó trên GitHub: **Settings → Pages → Source: Deploy from a branch → Branch: main / (root)** → Save.
-Sau vài phút web sẽ có ở `https://<username>.github.io/<repo>/`.
+Trên GitHub: **Settings → Pages → Source: GitHub Actions** (chỉ cần set 1 lần). Theo dõi tiến trình build ở tab **Actions**. Domain tuỳ chỉnh được cấu hình qua file `public/CNAME` (được build vào `dist/CNAME`).
 
 ## Lưu ý bảo mật
 
-- URL Apps Script Web App sẽ nằm public trong `script.js` (vì host tĩnh trên GitHub Pages) — ai có URL đều có thể gọi và ghi dữ liệu vào Sheet. Chỉ chia sẻ link web trong nhóm tin cậy.
+- URL Apps Script Web App nằm public trong bundle JS (vì host tĩnh trên GitHub Pages) — ai có URL đều có thể gọi và ghi dữ liệu vào Sheet. Chỉ chia sẻ link web trong nhóm tin cậy.
 - Không thêm dữ liệu nhạy cảm vào Sheet nếu repo/URL có thể bị lộ.

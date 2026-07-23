@@ -1,52 +1,12 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kê khai chi tiêu</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <main class="card">
-    <h1>Kê khai chi tiêu</h1>
-
-    <form id="expense-form">
-      <label for="ngayChi">Ngày chi</label>
-      <input type="date" id="ngayChi" name="ngayChi" required />
-
-      <label for="noiDung">Chi cái gì</label>
-      <input type="text" id="noiDung" name="noiDung" placeholder="VD: Ăn trưa, đổ xăng..." required />
-
-      <label for="soTien">Số tiền chi</label>
-      <input type="number" id="soTien" name="soTien" min="0" step="1000" placeholder="VD: 100000" required />
-
-      <label for="nguoiChi">Ai là người chi</label>
-      <select id="nguoiChi" name="nguoiChi" required>
-        <option value="" disabled selected>Đang tải danh sách...</option>
-      </select>
-
-      <label>Ai tham gia trong đợt chi này</label>
-      <div id="thamGiaList" class="checkbox-list">Đang tải danh sách...</div>
-
-      <label>Phương thức chia</label>
-      <div class="radio-group">
-        <label class="radio-inline">
-          <input type="radio" name="phuongThucChia" value="deu" checked />
-          Chia đều
-        </label>
-        <label class="radio-inline">
-          <input type="radio" name="phuongThucChia" value="tuNhap" />
-          Tự nhập số tiền mỗi người
-        </label>
-      </div>
-
-      <div id="chiTietChia" class="split-list"></div>
-
-      <button type="submit" id="submitBtn">Gửi</button>
-      <p id="statusMsg" class="status"></p>
-    </form>
-  </main>
-
-  <script src="script.js"></script>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kê khai chi tiêu</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

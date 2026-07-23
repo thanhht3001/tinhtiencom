@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { APPS_SCRIPT_URL } from "../config";
+import Combobox from "./Combobox";
 import "./ExpenseForm.css";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -137,21 +138,14 @@ export default function ExpenseForm() {
 
       <div className="field">
         <label htmlFor="noiDung">Chi cái gì</label>
-        <input
+        <Combobox
           id="noiDung"
-          type="text"
-          list="noiDungOptions"
-          placeholder="VD: Ăn trưa, đổ xăng... (gõ tự do hoặc chọn gợi ý)"
           value={noiDung}
-          onChange={(e) => setNoiDung(e.target.value)}
-          autoComplete="off"
+          onChange={setNoiDung}
+          options={danhMucNoiDung}
+          placeholder="VD: Ăn trưa, đổ xăng..."
           required
         />
-        <datalist id="noiDungOptions">
-          {danhMucNoiDung.map((item) => (
-            <option key={item} value={item} />
-          ))}
-        </datalist>
       </div>
 
       <div className="field">

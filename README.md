@@ -6,9 +6,10 @@ Domain: https://tinhtiencom.thanhht.org/
 
 ## Cấu trúc dữ liệu
 
-Google Sheet gồm 3 sheet:
+Google Sheet gồm các sheet:
 
 - **DanhMucThanhVien** — cột A: `Tên thành viên` (dòng 1 là header)
+- **DanhMucNoiDung** — cột A: `Nội dung chi` (dòng 1 là header) — danh sách gợi ý cho ô "Chi cái gì" trên form (không bắt buộc phải có; nếu không có sheet này, ô vẫn nhập tự do được, chỉ là không có gợi ý)
 - **ChiTieu** — mỗi khoản chi 1 dòng: `ID | Ngày chi | Nội dung | Số tiền chi | Người chi | Phương thức chia | Thời gian nhập`
 - **ChiTietChia** — mỗi người tham gia 1 dòng: `ID | Ngày chi | Người tham gia | Số tiền phải trả`
 
@@ -22,10 +23,11 @@ Cách thống kê sau này:
 ## Bước 1 — Tạo Google Sheet
 
 1. Vào https://sheets.google.com → tạo spreadsheet mới, đặt tên (VD: "TinhTienCom - Dữ liệu").
-2. Tạo 3 sheet (tab) với tên **chính xác**: `DanhMucThanhVien`, `ChiTieu`, `ChiTietChia`.
+2. Tạo 4 sheet (tab) với tên **chính xác**: `DanhMucThanhVien`, `DanhMucNoiDung`, `ChiTieu`, `ChiTietChia`.
 3. Ở sheet `DanhMucThanhVien`, dòng 1 gõ header `Tên thành viên`, các dòng dưới điền tên từng thành viên.
-4. Ở sheet `ChiTieu`, dòng 1 gõ header: `ID`, `Ngày chi`, `Nội dung`, `Số tiền chi`, `Người chi`, `Phương thức chia`, `Thời gian nhập`.
-5. Ở sheet `ChiTietChia`, dòng 1 gõ header: `ID`, `Ngày chi`, `Người tham gia`, `Số tiền phải trả`.
+4. Ở sheet `DanhMucNoiDung`, dòng 1 gõ header `Nội dung chi`, các dòng dưới điền các khoản chi hay gặp (VD: Ăn uống, Xăng xe, Điện nước...).
+5. Ở sheet `ChiTieu`, dòng 1 gõ header: `ID`, `Ngày chi`, `Nội dung`, `Số tiền chi`, `Người chi`, `Phương thức chia`, `Thời gian nhập`.
+6. Ở sheet `ChiTietChia`, dòng 1 gõ header: `ID`, `Ngày chi`, `Người tham gia`, `Số tiền phải trả`.
 
 ## Bước 2 — Gắn Apps Script
 

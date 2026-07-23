@@ -1,25 +1,34 @@
 /**
  * Backend Apps Script cho web kê khai chi tiêu.
- * Gắn (bound) script này vào Google Sheet có 3 sheet:
+ * Gắn (bound) script này vào Google Sheet có các sheet:
  *   - DanhMucThanhVien : cột A = Tên thành viên (dòng 1 là header)
+ *   - DanhMucNoiDung   : cột A = Nội dung chi thường gặp (dòng 1 là header) — không bắt buộc phải có
  *   - ChiTieu          : ID | Ngày chi | Nội dung | Số tiền chi | Người chi | Phương thức chia | Thời gian nhập
  *   - ChiTietChia      : ID | Ngày chi | Người tham gia | Số tiền phải trả
  */
 
 var SHEET_THANH_VIEN = 'DanhMucThanhVien';
+var SHEET_DANH_MUC_NOI_DUNG = 'DanhMucNoiDung';
 var SHEET_CHI_TIEU = 'ChiTieu';
 var SHEET_CHI_TIET_CHIA = 'ChiTietChia';
 
 function doGet(e) {
-  var ss = SpreadsheetApp.getActive();
-  var sheet = ss.getSheetByName(SHEET_THANH_VIEN);
+  return jsonOutput({
+    thanhVien: readColumnA(SHEET_THANH_VIEN),
+    danhMucNoiDung: readColumnA(SHEET_DANH_MUC_NOI_DUNG)
+  });
+}
+
+function readColumnA(sheetName) {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  if (!sheet) return [];
   var values = sheet.getDataRange().getValues();
-  var names = [];
+  var result = [];
   for (var i = 1; i < values.length; i++) {
-    var name = values[i][0];
-    if (name) names.push(String(name).trim());
+    var value = values[i][0];
+    if (value) result.push(String(value).trim());
   }
-  return jsonOutput({ thanhVien: names });
+  return result;
 }
 
 function doPost(e) {

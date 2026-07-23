@@ -8,6 +8,7 @@ const formatVnd = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
 
 export default function ExpenseForm() {
   const [thanhVienList, setThanhVienList] = useState([]);
+  const [danhMucNoiDung, setDanhMucNoiDung] = useState([]);
   const [loadError, setLoadError] = useState("");
 
   const [ngayChi, setNgayChi] = useState(today());
@@ -24,7 +25,10 @@ export default function ExpenseForm() {
   useEffect(() => {
     fetch(APPS_SCRIPT_URL)
       .then((res) => res.json())
-      .then((data) => setThanhVienList(data.thanhVien || []))
+      .then((data) => {
+        setThanhVienList(data.thanhVien || []);
+        setDanhMucNoiDung(data.danhMucNoiDung || []);
+      })
       .catch(() =>
         setLoadError("Không tải được danh sách thành viên. Kiểm tra lại APPS_SCRIPT_URL trong src/config.js.")
       );
@@ -136,11 +140,18 @@ export default function ExpenseForm() {
         <input
           id="noiDung"
           type="text"
-          placeholder="VD: Ăn trưa, đổ xăng..."
+          list="noiDungOptions"
+          placeholder="VD: Ăn trưa, đổ xăng... (gõ tự do hoặc chọn gợi ý)"
           value={noiDung}
           onChange={(e) => setNoiDung(e.target.value)}
+          autoComplete="off"
           required
         />
+        <datalist id="noiDungOptions">
+          {danhMucNoiDung.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
       </div>
 
       <div className="field">

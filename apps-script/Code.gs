@@ -29,6 +29,14 @@ function getRequiredPin() {
   return getConfigValue('Pin') || DEFAULT_PIN;
 }
 
+// Chống formula injection: nếu chuỗi bắt đầu bằng =, +, -, @ (hoặc tab),
+// Sheets có thể hiểu nhầm thành công thức. Thêm dấu ' phía trước để ép kiểu văn bản.
+function sanitizeText(value) {
+  var text = String(value == null ? '' : value);
+  if (/^[=+\-@\t]/.test(text)) return "'" + text;
+  return text;
+}
+
 function doGet(e) {
   return jsonOutput({
     thanhVien: readColumnA(SHEET_THANH_VIEN),
@@ -70,16 +78,16 @@ function doPost(e) {
     shChiTieu.appendRow([
       id,
       data.ngayChi,
-      data.noiDung,
+      sanitizeText(data.noiDung),
       data.soTien,
-      data.nguoiChi,
+      sanitizeText(data.nguoiChi),
       data.phuongThucChia,
       now
     ]);
 
     // Tạo mảng dữ liệu 5 cột cho sheet ChiTietChia
     var rows = data.chiTiet.map(function (item) {
-      return [id, data.ngayChi, data.nguoiChi, item.nguoi, item.soTien];
+      return [id, data.ngayChi, sanitizeText(data.nguoiChi), sanitizeText(item.nguoi), item.soTien];
     });
 
     if (rows.length > 0) {

@@ -7,7 +7,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const formatVnd = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
 
-export default function ExpenseForm() {
+export default function ExpenseForm({ onPinRejected }) {
   const [thanhVienList, setThanhVienList] = useState([]);
   const [danhMucNoiDung, setDanhMucNoiDung] = useState([]);
   const [loadError, setLoadError] = useState("");
@@ -19,6 +19,7 @@ export default function ExpenseForm() {
   const [thamGia, setThamGia] = useState([]);
   const [phuongThuc, setPhuongThuc] = useState("deu");
   const [splitAmounts, setSplitAmounts] = useState({});
+  const [pin, setPin] = useState(() => localStorage.getItem("tinhtiencom_pin") || "");
 
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState(null); // { type: 'success' | 'error', message }
@@ -94,6 +95,7 @@ export default function ExpenseForm() {
     }
 
     const payload = {
+      pin,
       ngayChi,
       noiDung: noiDung.trim(),
       soTien: soTienNumber,
@@ -116,6 +118,7 @@ export default function ExpenseForm() {
       resetForm();
     } catch (err) {
       setStatus({ type: "error", message: "Gửi thất bại: " + err.message });
+      if (err.message.indexOf("PIN") !== -1) onPinRejected?.();
     } finally {
       setSubmitting(false);
     }

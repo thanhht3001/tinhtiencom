@@ -1,0 +1,59 @@
+.pin-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pin-gate-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.pin-gate input {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-align: center;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.pin-gate input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.pin-gate button {
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pin-gate button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.pin-gate button:disabled {
+  background: #c7cad1;
+  cursor: not-allowed;
+}
+
+.pin-gate-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--color-error);
+  background: var(--color-error-bg);
+}

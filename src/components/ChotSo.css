@@ -1,0 +1,42 @@
+.chot-so {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.chot-so-range {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.chot-so-confirm {
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+}
+
+.chot-so-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.chot-so-confirm-actions button {
+  flex: 1;
+}
+
+.cancel-btn {
+  padding: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  border-color: var(--color-text-muted);
+}

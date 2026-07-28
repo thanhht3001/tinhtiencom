@@ -102,6 +102,7 @@ export default function ExpenseForm({ onPinRejected }) {
       nguoiChi,
       phuongThucChia: phuongThuc === "deu" ? "Chia đều" : "Tự nhập",
       chiTiet: buildChiTiet(),
+      userAgent: navigator.userAgent,
     };
 
     setSubmitting(true);

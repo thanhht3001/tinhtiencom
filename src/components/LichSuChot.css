@@ -1,0 +1,56 @@
+.lich-su-chot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ky-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ky-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: none;
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.ky-card-header:hover {
+  background: var(--color-surface-muted);
+}
+
+.ky-card-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ky-card-sub {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.ky-card-total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ky-card-body {
+  padding: 14px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

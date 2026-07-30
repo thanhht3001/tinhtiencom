@@ -2,8 +2,6 @@
 
 Form web React (Vite), host trên GitHub Pages qua GitHub Actions, gửi dữ liệu vào Google Sheet thông qua Google Apps Script.
 
-Domain: https://tinhtiencom.thanhht.org/
-
 ## Cấu trúc dữ liệu
 
 Google Sheet gồm các sheet:

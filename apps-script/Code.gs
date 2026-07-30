@@ -1,7 +1,7 @@
 /**
  * Backend Apps Script cho web kê khai chi tiêu.
  * Gắn (bound) script này vào Google Sheet có các sheet:
- *   - DanhMucThanhVien : cột A = Tên thành viên (dòng 1 là header)
+ *   - DanhMucThanhVien : cột A = Tên thành viên | cột B = Ngân hàng (dropdown) | cột C = STK (dòng 1 là header)
  *   - DanhMucNoiDung   : cột A = Nội dung chi thường gặp (dòng 1 là header) — không bắt buộc phải có
  *   - ChiTieu          : ID | Ngày chi | Nội dung | Số tiền chi | Người chi | Phương thức chia | Thời gian nhập | ID Kỳ | Thiết bị
  *   - ChiTietChia      : ID | Ngày chi | Người chi | Người tham gia | Số tiền phải trả | ID Kỳ
@@ -21,6 +21,20 @@ var SHEET_CAU_HINH = 'CauHinh';
 var SHEET_LICH_SU_CHOT = 'LichSuChot';
 var DEFAULT_PIN = '0108'; // Dùng khi sheet CauHinh chưa có dòng "Pin"
 var SETTLEMENT_EPSILON = 1; // Ngưỡng sai số làm tròn khi cấn trừ công nợ (đồng bộ với validate())
+
+// Tên ngân hàng (hiển thị trong dropdown ở cột "Ngân hàng" của DanhMucThanhVien) -> mã BIN Napas,
+// dùng để dựng URL ảnh QR VietQR. Nguồn: https://api.vietqr.io/v2/banks
+var BANK_BIN_MAP = {
+  'Vietcombank': '970436', 'VietinBank': '970415', 'BIDV': '970418', 'Agribank': '970405',
+  'Techcombank': '970407', 'MB Bank': '970422', 'ACB': '970416', 'VPBank': '970432',
+  'TPBank': '970423', 'Sacombank': '970403', 'HDBank': '970437', 'VIB': '970441',
+  'SHB': '970443', 'OCB': '970448', 'MSB': '970426', 'SeABank': '970440',
+  'Eximbank': '970431', 'SCB': '970429', 'LPBank': '970449', 'NamABank': '970428',
+  'VietCapitalBank': '970454', 'KienLongBank': '970452', 'PVcomBank': '970412',
+  'PublicBank': '970439', 'CIMB': '422589', 'GPBank': '970408', 'SaigonBank': '970400',
+  'VietABank': '970427', 'PGBank': '970430', 'VietBank': '970433', 'ShinhanBank': '970424',
+  'Woori': '970457', 'UnitedOverseas': '970458'
+};
 
 function getConfigValue(key) {
   var sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_CAU_HINH);
@@ -63,6 +77,26 @@ function readColumnA(sheetName) {
   return result;
 }
 
+// Đọc cột B (Ngân hàng) + C (STK) của DanhMucThanhVien, chỉ trả về những người có
+// đủ ngân hàng hợp lệ (khớp BANK_BIN_MAP) + STK — người thiếu thông tin sẽ không
+// có mặt trong map, để frontend biết không tạo được QR cho người đó.
+function readThanhVienBankInfo() {
+  var sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_THANH_VIEN);
+  if (!sheet) return {};
+  var values = sheet.getDataRange().getValues();
+  var result = {};
+  for (var i = 1; i < values.length; i++) {
+    var ten = String(values[i][0] || '').trim();
+    var nganHang = String(values[i][1] || '').trim();
+    var stk = String(values[i][2] || '').trim();
+    var bin = BANK_BIN_MAP[nganHang];
+    if (ten && bin && stk) {
+      result[ten] = { nganHang: nganHang, stk: stk, bin: bin };
+    }
+  }
+  return result;
+}
+
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
@@ -92,7 +126,11 @@ function doPost(e) {
 
     if (data.action === 'lichSuChot') {
       if (data.pin !== getRequiredPin()) throw new Error('Mã PIN nhóm không chính xác');
-      return jsonOutput({ result: 'success', kyList: docLichSuChot() });
+      return jsonOutput({ result: 'success', kyList: docLichSuChot(), bankInfo: readThanhVienBankInfo() });
+    }
+
+    if (data.action === 'danhDauThanhToan') {
+      return jsonOutput(danhDauThanhToan(data));
     }
 
     validate(data);
@@ -355,6 +393,38 @@ function safeJsonParse(text) {
   }
 }
 
+// action 'danhDauThanhToan': tìm đúng kỳ (kyId) trong LichSuChot, đánh dấu 1 giao dịch
+// trong mảng "Giao dịch tối giản (JSON)" là đã thanh toán kèm người xác nhận + thời gian.
+// index = vị trí giao dịch trong mảng transactions của kỳ đó (mỗi cặp tu->den chỉ xuất
+// hiện tối đa 1 lần trong 1 kỳ nên index ổn định để định danh).
+function danhDauThanhToan(data) {
+  if (data.pin !== getRequiredPin()) throw new Error('Mã PIN nhóm không chính xác');
+  var nguoiDanhDau = sanitizeText(String(data.nguoiDanhDau || '').trim());
+  if (!nguoiDanhDau) throw new Error('Thiếu người xác nhận đã thanh toán');
+  if (!data.kyId) throw new Error('Thiếu kỳ chốt sổ');
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_LICH_SU_CHOT);
+    var values = sheet.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      if (values[i][0] !== data.kyId) continue;
+      var transactions = safeJsonParse(values[i][9]);
+      var idx = Number(data.index);
+      if (!transactions[idx]) throw new Error('Không tìm thấy giao dịch');
+      transactions[idx].daThanhToan = true;
+      transactions[idx].nguoiDanhDau = nguoiDanhDau;
+      transactions[idx].thoiGianDanhDau = new Date().toISOString();
+      sheet.getRange(i + 1, 10).setValue(JSON.stringify(transactions));
+      return { result: 'success', transactions: transactions };
+    }
+    throw new Error('Không tìm thấy kỳ chốt sổ');
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ===== Migration (chạy tay 1 lần) =====
 
 // Idempotent - an toàn khi chạy lại nhiều lần, chỉ thêm header/sheet còn thiếu,
@@ -362,6 +432,17 @@ function safeJsonParse(text) {
 // migrateChotSoSchema trong dropdown rồi bấm Run, TRƯỚC KHI deploy lại Web App.
 function migrateChotSoSchema() {
   var ss = SpreadsheetApp.getActive();
+
+  var shThanhVien = ss.getSheetByName(SHEET_THANH_VIEN);
+  if (shThanhVien) {
+    ensureHeader(shThanhVien, 2, 'Ngân hàng');
+    ensureHeader(shThanhVien, 3, 'STK');
+    var bankValidation = SpreadsheetApp.newDataValidation()
+      .requireValueInList(Object.keys(BANK_BIN_MAP), true)
+      .setAllowInvalid(false)
+      .build();
+    shThanhVien.getRange(2, 2, 500, 1).setDataValidation(bankValidation);
+  }
 
   var shChiTieu = ss.getSheetByName(SHEET_CHI_TIEU);
   ensureHeader(shChiTieu, 8, 'ID Kỳ');

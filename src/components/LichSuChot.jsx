@@ -6,20 +6,14 @@ import "./LichSuChot.css";
 
 const formatVnd = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
 
-export default function LichSuChot({ onPinRejected }) {
+export default function LichSuChot({ thanhVienList, onPinRejected }) {
   const [kyList, setKyList] = useState(null);
   const [bankInfo, setBankInfo] = useState({});
-  const [thanhVienList, setThanhVienList] = useState([]);
   const [loadError, setLoadError] = useState("");
   const [expandedKyId, setExpandedKyId] = useState(null);
 
   useEffect(() => {
     const pin = localStorage.getItem(PIN_STORAGE_KEY) || "";
-
-    fetch(APPS_SCRIPT_URL)
-      .then((res) => res.json())
-      .then((data) => setThanhVienList(data.thanhVien || []))
-      .catch(() => {});
 
     fetch(APPS_SCRIPT_URL, {
       method: "POST",

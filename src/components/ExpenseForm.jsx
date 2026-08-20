@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { APPS_SCRIPT_URL } from "../config";
 import Combobox from "./Combobox";
 import "./ExpenseForm.css";
@@ -7,11 +7,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const formatVnd = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
 
-export default function ExpenseForm({ onPinRejected }) {
-  const [thanhVienList, setThanhVienList] = useState([]);
-  const [danhMucNoiDung, setDanhMucNoiDung] = useState([]);
-  const [loadError, setLoadError] = useState("");
-
+export default function ExpenseForm({ thanhVienList, danhMucNoiDung, onPinRejected }) {
   const [ngayChi, setNgayChi] = useState(today());
   const [noiDung, setNoiDung] = useState("");
   const [soTien, setSoTien] = useState("");
@@ -21,20 +17,14 @@ export default function ExpenseForm({ onPinRejected }) {
   const [splitAmounts, setSplitAmounts] = useState({});
   const [pin, setPin] = useState(() => localStorage.getItem("tinhtiencom_pin") || "");
 
+  // ID sinh sẵn cho lần gửi tiếp theo — giữ nguyên xuyên suốt các lần gửi lại khi lỗi,
+  // chỉ đổi sang ID mới sau khi gửi thành công (resetForm). Nhờ vậy nếu request trước
+  // thực ra đã lưu thành công (chỉ lỗi ở phản hồi) thì server nhận diện trùng ID và
+  // không ghi thêm dòng khi người dùng bấm gửi lại.
+  const [submissionId, setSubmissionId] = useState(() => crypto.randomUUID());
+
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState(null); // { type: 'success' | 'error', message }
-
-  useEffect(() => {
-    fetch(APPS_SCRIPT_URL)
-      .then((res) => res.json())
-      .then((data) => {
-        setThanhVienList(data.thanhVien || []);
-        setDanhMucNoiDung(data.danhMucNoiDung || []);
-      })
-      .catch(() =>
-        setLoadError("Không tải được danh sách thành viên. Kiểm tra lại APPS_SCRIPT_URL trong src/config.js.")
-      );
-  }, []);
 
   const soTienNumber = Number(soTien) || 0;
 
@@ -75,6 +65,7 @@ export default function ExpenseForm({ onPinRejected }) {
     setThamGia([]);
     setPhuongThuc("deu");
     setSplitAmounts({});
+    setSubmissionId(crypto.randomUUID());
   }
 
   async function handleSubmit(e) {
@@ -95,6 +86,7 @@ export default function ExpenseForm({ onPinRejected }) {
     }
 
     const payload = {
+      id: submissionId,
       pin,
       ngayChi,
       noiDung: noiDung.trim(),
@@ -176,7 +168,7 @@ export default function ExpenseForm({ onPinRejected }) {
           disabled={!dataReady}
         >
           <option value="" disabled>
-            {dataReady ? "-- Chọn người chi --" : "Đang tải..."}
+            {dataReady ? "-- Chọn người chi --" : "Chưa có thành viên nào"}
           </option>
           {thanhVienList.map((name) => (
             <option key={name} value={name}>
@@ -188,27 +180,23 @@ export default function ExpenseForm({ onPinRejected }) {
 
       <div className="field">
         <label>Ai tham gia trong đợt chi này</label>
-        {loadError ? (
-          <p className="hint error-text">{loadError}</p>
-        ) : (
-          <div className="pill-list">
-            {thanhVienList.map((name) => {
-              const active = thamGia.includes(name);
-              return (
-                <button
-                  type="button"
-                  key={name}
-                  className={`pill${active ? " pill-active" : ""}`}
-                  onClick={() => toggleThamGia(name)}
-                  aria-pressed={active}
-                >
-                  {name}
-                </button>
-              );
-            })}
-            {!dataReady && !loadError && <span className="hint">Đang tải danh sách...</span>}
-          </div>
-        )}
+        <div className="pill-list">
+          {thanhVienList.map((name) => {
+            const active = thamGia.includes(name);
+            return (
+              <button
+                type="button"
+                key={name}
+                className={`pill${active ? " pill-active" : ""}`}
+                onClick={() => toggleThamGia(name)}
+                aria-pressed={active}
+              >
+                {name}
+              </button>
+            );
+          })}
+          {!dataReady && <span className="hint">Chưa có thành viên nào.</span>}
+        </div>
       </div>
 
       <div className="field">

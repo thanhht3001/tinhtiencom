@@ -4,6 +4,53 @@ import "./SettlementSummary.css";
 
 const formatVnd = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
 
+const formatNgayChi = (value) => {
+  const parts = String(value || "").split("-");
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value || "";
+};
+
+// Icon "?" cạnh số chênh lệch của mỗi người - hover/focus hiện tooltip liệt kê các khoản
+// đã chi và các khoản được tính vào (theo ngày tăng dần) để người dùng hiểu số đó từ đâu ra.
+// Dữ liệu chiTietDaChi/chiTietPhaiTra do server tính trong computeOpenSettlement(); các kỳ
+// chốt sổ cũ (trước khi tính năng này có) không có 2 trường này nên fallback về mảng rỗng.
+function NetDetailTooltip({ chiTietDaChi, chiTietPhaiTra }) {
+  const daChi = chiTietDaChi || [];
+  const phaiTra = chiTietPhaiTra || [];
+
+  return (
+    <span className="net-info" tabIndex={0}>
+      <span className="net-info-icon" aria-hidden="true">?</span>
+      <span className="net-info-popup" role="tooltip">
+        <p className="net-info-heading">Được tính vào khoản chi</p>
+        {phaiTra.length > 0 ? (
+          <ul>
+            {phaiTra.map((item, i) => (
+              <li key={i}>
+                {formatNgayChi(item.ngayChi)} — {item.noiDung} ({item.nguoiChi} chi): {formatVnd(item.soTien)}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="net-info-empty">Không có khoản nào.</p>
+        )}
+
+        <p className="net-info-heading">Đã chi</p>
+        {daChi.length > 0 ? (
+          <ul>
+            {daChi.map((item, i) => (
+              <li key={i}>
+                {formatNgayChi(item.ngayChi)} — {item.noiDung}: {formatVnd(item.soTien)}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="net-info-empty">Không có khoản nào.</p>
+        )}
+      </span>
+    </span>
+  );
+}
+
 // Hiển thị bảng tổng kết theo người + danh sách giao dịch tối giản.
 // Dùng chung giữa tab "Chốt sổ" (xem trước / kết quả vừa chốt) và tab "Lịch sử chốt".
 // Tính năng QR/đánh dấu đã thanh toán chỉ bật khi enablePayment=true (chỉ ở Lịch sử chốt,
@@ -44,6 +91,7 @@ export default function SettlementSummary({
               <td className={p.net < 0 ? "amount-negative" : p.net > 0 ? "amount-positive" : ""}>
                 {p.net > 0 ? "+" : ""}
                 {formatVnd(p.net)}
+                <NetDetailTooltip chiTietDaChi={p.chiTietDaChi} chiTietPhaiTra={p.chiTietPhaiTra} />
               </td>
             </tr>
           ))}

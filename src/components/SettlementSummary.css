@@ -38,6 +38,75 @@
   font-weight: 600;
 }
 
+.net-info {
+  position: relative;
+  display: inline-flex;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.net-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: default;
+}
+
+.net-info-popup {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  max-width: calc(100vw - 48px);
+  padding: 10px 12px;
+  background: var(--color-text);
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.24);
+  text-align: left;
+  font-weight: normal;
+  font-size: 0.78rem;
+  z-index: 20;
+}
+
+.net-info:hover .net-info-popup,
+.net-info:focus .net-info-popup,
+.net-info:focus-within .net-info-popup {
+  display: block;
+}
+
+.net-info-heading {
+  margin: 10px 0 4px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #fff;
+}
+
+.net-info-heading:first-child {
+  margin-top: 0;
+}
+
+.net-info-popup ul {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.net-info-empty {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .settlement-transactions-title {
   margin: 0 0 8px;
   font-size: 0.85rem;

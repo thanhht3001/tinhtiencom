@@ -138,35 +138,49 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActive();
     var shChiTieu = ss.getSheetByName(SHEET_CHI_TIEU);
     var shChiTietChia = ss.getSheetByName(SHEET_CHI_TIET_CHIA);
+    // Client tự sinh id và giữ nguyên id đó khi gửi lại do lỗi mạng/timeout - cho phép
+    // phát hiện request trùng bên dưới. Nếu client cũ không gửi id thì server tự sinh như trước.
+    var id = String(data.id || '').trim() || Utilities.getUuid();
 
-    var id = Utilities.getUuid();
-    var now = new Date();
+    var lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      // id đã tồn tại nghĩa là lần gửi trước đã ghi thành công (chỉ lỗi ở phản hồi về client) ->
+      // trả success luôn, không ghi thêm dòng để tránh trùng khoản chi.
+      if (timDongChiTieuTheoId(shChiTieu, id) !== -1) {
+        return jsonOutput({ result: 'success', id: id });
+      }
 
-    // Ghi vào sheet ChiTieu
-    shChiTieu.appendRow([
-      id,
-      data.ngayChi,
-      sanitizeText(data.noiDung),
-      data.soTien,
-      sanitizeText(data.nguoiChi),
-      data.phuongThucChia,
-      now,
-      '', // ID Kỳ - rỗng nghĩa là chưa chốt
-      sanitizeText(data.userAgent || '')
-    ]);
+      var now = new Date();
 
-    // Tạo mảng dữ liệu cho sheet ChiTietChia (cột cuối "ID Kỳ" để rỗng - chưa chốt)
-    var rows = data.chiTiet.map(function (item) {
-      return [id, data.ngayChi, sanitizeText(data.nguoiChi), sanitizeText(item.nguoi), item.soTien, ''];
-    });
+      // Ghi vào sheet ChiTieu
+      shChiTieu.appendRow([
+        id,
+        data.ngayChi,
+        sanitizeText(data.noiDung),
+        data.soTien,
+        sanitizeText(data.nguoiChi),
+        data.phuongThucChia,
+        now,
+        '', // ID Kỳ - rỗng nghĩa là chưa chốt
+        sanitizeText(data.userAgent || '')
+      ]);
 
-    if (rows.length > 0) {
-      shChiTietChia
-        .getRange(shChiTietChia.getLastRow() + 1, 1, rows.length, rows[0].length) // Tự động nhận diện số cột thay vì cố định
-        .setValues(rows);
+      // Tạo mảng dữ liệu cho sheet ChiTietChia (cột cuối "ID Kỳ" để rỗng - chưa chốt)
+      var rows = data.chiTiet.map(function (item) {
+        return [id, data.ngayChi, sanitizeText(data.nguoiChi), sanitizeText(item.nguoi), item.soTien, ''];
+      });
+
+      if (rows.length > 0) {
+        shChiTietChia
+          .getRange(shChiTietChia.getLastRow() + 1, 1, rows.length, rows[0].length) // Tự động nhận diện số cột thay vì cố định
+          .setValues(rows);
+      }
+
+      return jsonOutput({ result: 'success', id: id });
+    } finally {
+      lock.releaseLock();
     }
-
-    return jsonOutput({ result: 'success', id: id });
   } catch (err) {
     return jsonOutput({ result: 'error', error: err.message || String(err) });
   }
@@ -195,6 +209,18 @@ function jsonOutput(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Tìm số dòng (1-based) trong sheet ChiTieu có cột ID (cột A) khớp id truyền vào.
+// Dùng để chặn ghi trùng khi client gửi lại request tạo khoản chi bị lỗi với cùng 1 id.
+function timDongChiTieuTheoId(sheet, id) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === id) return i + 2;
+  }
+  return -1;
+}
+
 // ===== Chốt sổ =====
 
 // Đọc toàn bộ dòng chưa chốt (cột "ID Kỳ" rỗng) từ ChiTieu + ChiTietChia,
@@ -203,6 +229,7 @@ function jsonOutput(obj) {
 // để action 'chotSo' có thể gọi lại hàm này ngay trong lock và ra kết quả đáng tin.
 function computeOpenSettlement() {
   var ss = SpreadsheetApp.getActive();
+  var tz = ss.getSpreadsheetTimeZone();
   var shChiTieu = ss.getSheetByName(SHEET_CHI_TIEU);
   var shChiTietChia = ss.getSheetByName(SHEET_CHI_TIET_CHIA);
 
@@ -211,6 +238,8 @@ function computeOpenSettlement() {
 
   var daTra = {};
   var openChiTieuIds = {};
+  var chiTieuInfoById = {}; // id -> { ngayChi, noiDung, nguoiChi } - tra cứu khi lặp ChiTietChia bên dưới
+  var chiTietTheoNguoiChi = {}; // tên người chi -> mảng khoản đã chi (hiển thị ở tooltip "Đã chi")
   var chiTieuRowsOpen = []; // số dòng thực tế trên sheet (1-based) của các dòng chưa chốt
   var tongSoTien = 0;
   var tuNgay = null;
@@ -221,7 +250,8 @@ function computeOpenSettlement() {
     var idKy = row[7]; // cột H
     if (idKy) continue; // đã chốt trước đó, bỏ qua
     var id = row[0];
-    var ngayChi = row[1];
+    var ngayChiRaw = row[1];
+    var noiDung = row[2];
     var soTien = Number(row[3]) || 0;
     var nguoiChi = row[4];
 
@@ -230,15 +260,21 @@ function computeOpenSettlement() {
     daTra[nguoiChi] = (daTra[nguoiChi] || 0) + soTien;
     tongSoTien += soTien;
 
-    var ngayChiDate = ngayChi instanceof Date ? ngayChi : new Date(ngayChi);
+    var ngayChiDate = ngayChiRaw instanceof Date ? ngayChiRaw : new Date(ngayChiRaw);
+    var ngayChiFmt = isNaN(ngayChiDate.getTime()) ? String(ngayChiRaw) : Utilities.formatDate(ngayChiDate, tz, 'yyyy-MM-dd');
     if (!isNaN(ngayChiDate.getTime())) {
       if (!tuNgay || ngayChiDate < tuNgay) tuNgay = ngayChiDate;
       if (!denNgay || ngayChiDate > denNgay) denNgay = ngayChiDate;
     }
+
+    chiTieuInfoById[id] = { ngayChi: ngayChiFmt, noiDung: noiDung, nguoiChi: nguoiChi };
+    if (!chiTietTheoNguoiChi[nguoiChi]) chiTietTheoNguoiChi[nguoiChi] = [];
+    chiTietTheoNguoiChi[nguoiChi].push({ ngayChi: ngayChiFmt, noiDung: noiDung, soTien: soTien });
   }
 
   var phaiTra = {};
   var chiTietChiaRowsOpen = [];
+  var chiTietThamGiaTheoNguoi = {}; // tên người tham gia -> mảng khoản được tính vào (tooltip "Được tính vào")
 
   for (var j = 1; j < chiTietValues.length; j++) {
     var r = chiTietValues[j];
@@ -248,6 +284,15 @@ function computeOpenSettlement() {
     var soTienPhai = Number(r[4]) || 0;
     phaiTra[nguoiThamGia] = (phaiTra[nguoiThamGia] || 0) + soTienPhai;
     chiTietChiaRowsOpen.push(j + 1);
+
+    var info = chiTieuInfoById[idChiTiet] || {};
+    if (!chiTietThamGiaTheoNguoi[nguoiThamGia]) chiTietThamGiaTheoNguoi[nguoiThamGia] = [];
+    chiTietThamGiaTheoNguoi[nguoiThamGia].push({
+      ngayChi: info.ngayChi,
+      noiDung: info.noiDung,
+      nguoiChi: info.nguoiChi,
+      soTien: soTienPhai
+    });
   }
 
   var tenAll = {};
@@ -258,7 +303,14 @@ function computeOpenSettlement() {
   var perPerson = Object.keys(tenAll).map(function (ten) {
     var da = Math.round((daTra[ten] || 0) * 100) / 100;
     var phai = Math.round((phaiTra[ten] || 0) * 100) / 100;
-    return { ten: ten, daTra: da, phaiTra: phai, net: Math.round((da - phai) * 100) / 100 };
+    return {
+      ten: ten,
+      daTra: da,
+      phaiTra: phai,
+      net: Math.round((da - phai) * 100) / 100,
+      chiTietDaChi: (chiTietTheoNguoiChi[ten] || []).sort(sortByNgayChi),
+      chiTietPhaiTra: (chiTietThamGiaTheoNguoi[ten] || []).sort(sortByNgayChi)
+    };
   });
 
   return {
@@ -266,11 +318,16 @@ function computeOpenSettlement() {
     transactions: donGianHoaNo(perPerson),
     soDongChiTieu: chiTieuRowsOpen.length,
     tongSoTien: tongSoTien,
-    tuNgay: tuNgay ? Utilities.formatDate(tuNgay, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : null,
-    denNgay: denNgay ? Utilities.formatDate(denNgay, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : null,
+    tuNgay: tuNgay ? Utilities.formatDate(tuNgay, tz, 'yyyy-MM-dd') : null,
+    denNgay: denNgay ? Utilities.formatDate(denNgay, tz, 'yyyy-MM-dd') : null,
     chiTieuRowsOpen: chiTieuRowsOpen,
     chiTietChiaRowsOpen: chiTietChiaRowsOpen
   };
+}
+
+// Sắp xếp mục chi tiết theo ngày tăng dần cho tooltip - chuỗi 'yyyy-MM-dd' so sánh trực tiếp được.
+function sortByNgayChi(a, b) {
+  return a.ngayChi < b.ngayChi ? -1 : a.ngayChi > b.ngayChi ? 1 : 0;
 }
 
 // Thuật toán tham lam tối giản hoá công nợ: ghép người nợ nhiều nhất với người

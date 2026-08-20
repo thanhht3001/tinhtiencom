@@ -16,10 +16,9 @@ async function postAction(payload) {
   return data;
 }
 
-export default function ChotSo({ onPinRejected }) {
+export default function ChotSo({ thanhVienList, onPinRejected }) {
   const pin = localStorage.getItem(PIN_STORAGE_KEY) || "";
 
-  const [thanhVienList, setThanhVienList] = useState([]);
   const [preview, setPreview] = useState(null);
   const [loadError, setLoadError] = useState("");
 
@@ -31,11 +30,6 @@ export default function ChotSo({ onPinRejected }) {
   const [result, setResult] = useState(null); // kết quả sau khi chốt thành công
 
   useEffect(() => {
-    fetch(APPS_SCRIPT_URL)
-      .then((res) => res.json())
-      .then((data) => setThanhVienList(data.thanhVien || []))
-      .catch(() => setLoadError("Không tải được danh sách thành viên."));
-
     postAction({ action: "chotSoPreview", pin })
       .then(setPreview)
       .catch((err) => {

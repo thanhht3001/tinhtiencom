@@ -62,10 +62,12 @@
 .net-info-popup {
   display: none;
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   right: 0;
   width: 260px;
   max-width: calc(100vw - 48px);
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
   padding: 10px 12px;
   background: var(--color-text);
   color: #fff;

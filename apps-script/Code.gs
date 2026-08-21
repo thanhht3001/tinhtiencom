@@ -148,7 +148,7 @@ function doPost(e) {
       // id đã tồn tại nghĩa là lần gửi trước đã ghi thành công (chỉ lỗi ở phản hồi về client) ->
       // trả success luôn, không ghi thêm dòng để tránh trùng khoản chi.
       if (timDongChiTieuTheoId(shChiTieu, id) !== -1) {
-        return jsonOutput({ result: 'success', id: id });
+        return jsonOutput({ result: 'success', id: id, daTonTai: true });
       }
 
       var now = new Date();

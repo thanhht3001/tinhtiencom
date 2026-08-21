@@ -105,9 +105,28 @@ export default function ExpenseForm({ thanhVienList, danhMucNoiDung, onPinReject
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+
+      // Apps Script Web App thỉnh thoảng trả về trang lỗi HTML thay vì JSON ở bước
+      // redirect nội bộ của Google, dù request đã ghi vào sheet thành công. Giữ
+      // nguyên submissionId (không resetForm) để lần gửi lại được server nhận diện
+      // trùng ID và không ghi thêm dòng.
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setStatus({
+          type: "error",
+          message:
+            "Mất kết nối khi nhận phản hồi từ server. Khoản chi có thể đã được lưu — vui lòng bấm Gửi lại để xác nhận (sẽ không bị trùng).",
+        });
+        return;
+      }
+
       if (data.result !== "success") throw new Error(data.error || "Lỗi không xác định");
-      setStatus({ type: "success", message: "Đã lưu thành công!" });
+      setStatus({
+        type: "success",
+        message: data.daTonTai ? "Khoản chi này đã được ghi nhận trước đó." : "Đã lưu thành công!",
+      });
       resetForm();
     } catch (err) {
       setStatus({ type: "error", message: "Gửi thất bại: " + err.message });
